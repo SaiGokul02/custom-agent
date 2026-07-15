@@ -1,0 +1,40 @@
+.navbar {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    margin: 0;
+    padding: 1.5em 3em;
+    box-sizing: border-box;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.navbar li {
+    list-style: none;
+}
+
+.navbar li a {
+    color: #000;
+    text-decoration: none;
+}
+
+.navbar .profile {
+    margin-left: auto;
+    display: flex;
+    gap: 40px;
+    align-items: center;
+}
+
+.navbar .profile p {
+    font-weight: 500;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar .profile button {
+    background-color: black;
+    color: white;
+    font-weight: 400;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 4px;
+}

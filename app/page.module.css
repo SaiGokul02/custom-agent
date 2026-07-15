@@ -1,0 +1,98 @@
+.main {
+    padding-top: 30px;
+    width: 65%;
+    height: calc(100vh - 80px);
+    box-sizing: border-box;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.main .title {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* .main .chatResponse {
+    height: 100%;
+    overflow-y: scroll;
+    margin-bottom: 16px;
+}
+
+.main .chatResponse .user {
+    position: absolute;
+    right: 0;
+}
+
+.main .chatResponse .ai {
+    position: absolute;
+    left: 0;
+} */
+
+.main .chatResponse {
+    height: 100%;
+    overflow-y: auto;
+    margin-bottom: 16px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.main .chatResponse .user {
+    align-self: flex-end;
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: black;
+    color: #fff;
+    word-break: break-word;
+}
+
+.main .chatResponse .ai {
+    align-self: flex-start;
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: #e9ecef;
+    color: #000;
+    word-break: break-word;
+}
+
+.main .chatArea {
+    width: 50%;
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.main .chatArea .userInput {
+    background-color: #fff;
+    width: 100%;
+    padding: 16px 60px 16px 16px;
+    border-radius: 24px;
+    box-sizing: border-box;
+    border: 1px solid gray;
+}
+
+/* Style applied when the user clicks or tabs into the input */
+.main .chatArea .userInput:focus {
+  border-color: none; /* Changes border to blue */
+  outline: none;         /* Removes the default browser ring */
+}
+
+.main .chatArea .submitInput {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    background-color: black;
+    color: white;
+    border-radius: 50%;
+    padding: 8px 12px;
+    border: 0;
+    font-weight: bolder;
+}

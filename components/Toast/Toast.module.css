@@ -1,0 +1,45 @@
+.toast {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    color: white;
+    animation: slideIn 0.5s forwards;
+    padding: 1em;
+}
+
+.toast.closing {
+    animation: slideOut 1s forwards;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+.success {
+    background-color: #16a34a;
+}
+
+.error {
+    background-color: #dc2626;
+}

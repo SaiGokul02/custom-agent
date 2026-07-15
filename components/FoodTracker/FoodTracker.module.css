@@ -1,0 +1,66 @@
+.foodTrackerSec {
+    margin: 20px;
+    padding: 30px 20px;
+    width: 50vw;
+    background-color: wheat;
+    border-radius: 12px;
+}
+
+.foodTrackerSec .header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.foodTrackerSec .header p {
+    margin-bottom: 0;
+}
+
+.foodTrackerSec .header .openMealSelectorBtn {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    background-color: #B7410E ;
+    border: none;
+    color: white;
+    font-size: 18px;
+}
+
+.foodTrackerSec .caloriesInfo {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.foodTrackerSec .caloriesInfo .calorieInfoItem {
+    flex: 1;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid black;
+    box-sizing: border-box;
+}
+
+.foodTrackerSec .nutrition .title {
+    font-size: 16px;
+    color: grey;
+    margin-bottom: 10px;
+}
+
+.foodTrackerSec .nutrition .nutritionInfo {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.foodTrackerSec .nutrition .nutritionInfo {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 10px;
+    row-gap: 20px;
+}
+
+.foodTrackerSec .nutrition .nutritionInfoItems {
+    flex: 0 0 calc((100% - 30px) / 4);
+    box-sizing: border-box;
+}

@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MealTimes {
+  breakfast
+  morningSnack
+  lunch
+  eveningSnack
+  dinner
+}
+
+model users {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+
+  settings UserSettings?
+
+  foodLogs FoodTracker[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Nutrition {
+  id            String  @id @default(cuid())
+
+  food          String
+  servingLabel  String
+  baseQuantity  Float
+
+  calories      Float
+
+  carbohydrates Float
+  protein       Float
+  fat           Float
+  fiber         Float
+  sugar         Float
+
+  sodium        Float
+
+  foodTrackerItems FoodTracker[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("nutrition")
+}
+
+model UserSettings {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nutritionSettings NutritionSettings?
+  workoutSettings WorkoutSettings?
+}
+
+model NutritionSettings {
+  id String @id @default(cuid())
+
+  calorieTarget Float?
+
+  settingsId String @unique
+  settings UserSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade) 
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorkoutSettings {
+  id String @id @default(cuid())
+
+  settingsId String @unique
+  settings UserSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FoodTracker {
+  id String @id @default(cuid())
+
+  userId String
+  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  nutritionId String
+  nutrition Nutrition @relation(fields: [nutritionId], references: [id], onDelete: Cascade)
+
+  quantity Float
+
+  mealTime MealTimes?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,124 @@
+.addFoodSec {
+    padding: 2em;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.addFoodSec .mealType {
+    list-style: none;
+    text-decoration: none;
+    color: black;
+}
+
+.addFoodSec .searchResultBlock {
+    padding: 2em 0;
+}
+
+.addFoodSec .searchResultBlock .searchBlock {
+    margin-bottom: 2em;
+}
+
+.addFoodSec .searchResultBlock .searchBlock form {
+    width: 50vw;
+    margin: 0 auto;
+    position: relative;
+}
+
+.addFoodSec .searchResultBlock .searchBlock input {
+    width: 100%;
+    padding: 1em 6em 1em 1em;
+    /* padding: 1em; */
+    border-radius: 12px;
+    border: 2px solid gray;
+    box-sizing: border-box;
+}
+
+.addFoodSec .searchResultBlock .searchBlock button {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    border: none;
+    background: #000;
+    color: #fff;
+    padding: 0.6em 1em;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.addFoodSec .searchResultBlock .searchResult .searchResultItem {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1em;
+    border-radius: 12px;
+    border: 2px solid gray;
+    margin-bottom: 0.5em;
+}
+
+.addFoodSec .searchResultBlock .searchResult .searchResultItem .foodItem p {
+    margin: 0;
+    padding: 0;
+}
+
+.addFoodSec .searchResultBlock .searchResult .searchResultItem .foodItem .foodName {
+    margin-bottom: 10px;
+}
+
+.addFoodSec .searchResultBlock .searchResult .searchResultItem .nutrition {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.addFoodSec .searchResultBlock .searchResult .searchResultItem .nutrition .calories {
+    margin: 0;
+    padding: 0;
+}
+
+.toast {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: red;
+    width: 300px;
+
+    animation: slideIn 0.5s forwards;
+}
+
+.toast.closing {
+    animation: slideOut 0.5s forwards;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+.success {
+    background-color: #16a34a;
+}
+
+.error {
+    background-color: #dc2626;
+}

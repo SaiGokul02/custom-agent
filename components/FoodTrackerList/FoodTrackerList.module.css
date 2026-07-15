@@ -1,0 +1,258 @@
+.wrap {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ---------- loading skeleton ---------- */
+
+.skeleton {
+  height: 5rem;
+  border-radius: 1rem;
+  background: #f0ede8;
+  margin-bottom: 0.75rem;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ---------- error state ---------- */
+
+.error {
+  border: 1px solid #f3cfc9;
+  background: #fdf2f0;
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.errorTitle {
+  margin: 0;
+  font-weight: 600;
+  color: #b3402f;
+  font-size: 0.9rem;
+}
+
+.errorBody {
+  margin: 0.25rem 0 0;
+  color: #c25d4d;
+  font-size: 0.85rem;
+}
+
+/* ---------- empty state ---------- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+  border: 1px dashed #d8d2c8;
+  border-radius: 1rem;
+  padding: 3rem 1.5rem;
+}
+
+.emptyIcon {
+  color: #b7ae9e;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-weight: 600;
+  color: #4a4640;
+}
+
+.emptyBody {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #8a8478;
+}
+
+/* ---------- meal sections ---------- */
+
+.mealSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mealHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem;
+}
+
+.mealTitle {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a8478;
+}
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ---------- food card ---------- */
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #fff;
+  border: 1px solid #e8e4dc;
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.15s ease;
+}
+
+.card:hover {
+  border-color: #d8d2c8;
+}
+
+.cardMain {
+  min-width: 0;
+  flex: 1;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.cardTitle {
+  margin: 0;
+  font-weight: 600;
+  color: #2b2925;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qtyBadge {
+  flex-shrink: 0;
+  background: #f0ede8;
+  color: #6b6558;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.cardServing {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #9a9488;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardMacros {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.macroItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #8a8478;
+}
+
+.macroItem svg {
+  color: #c15a3e;
+}
+
+.cardSide {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.cardCalories {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #2b2925;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cardCalories svg {
+  color: #c15a3e;
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.15rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.card:hover .cardActions {
+  opacity: 1;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: #a8a196;
+  padding: 0.35rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.iconBtn:hover {
+  background: #f0ede8;
+  color: #4a4640;
+}
+
+.iconBtnDanger:hover {
+  background: #fdf2f0;
+  color: #c0392b;
+}
+
+/* ---------- accessibility ---------- */
+
+.iconBtn:focus-visible {
+  outline: 2px solid #c15a3e;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* ---------- mobile ---------- */
+
+@media (max-width: 420px) {
+  .card {
+    flex-wrap: wrap;
+  }
+  .cardSide {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
