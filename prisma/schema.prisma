@@ -30,6 +30,8 @@ model users {
 
   foodLogs FoodTracker[]
 
+  conversations Conversations[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -106,6 +108,19 @@ model FoodTracker {
   quantity Float
 
   mealTime MealTimes?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Conversations {
+  id String @id @default(cuid())
+
+  userId String
+  user users @relation(fields: [userId], references: [id])
+
+  threadId String   @unique
+  title    String   @default("New conversation")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

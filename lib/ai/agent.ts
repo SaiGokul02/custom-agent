@@ -1,5 +1,6 @@
 import { createAgent } from "langchain";
-import { MemorySaver } from "@langchain/langgraph";
+import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
+// import { MemorySaver } from "@langchain/langgraph";
 
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
@@ -11,15 +12,11 @@ import { getNutritionSummary } from "./tools/getNutritionSummary";
 
 const apiKey = process.env.GOOGLE_API_KEY
 
-const checkpointer = new MemorySaver();
+// const checkpointer = new MemorySaver();
 
-// gokul's key
-// const model = new ChatGoogleGenerativeAI({
-//     model: "gemini-2.5-flash-lite",
-//     apiKey
-// });
+const checkpointer = PostgresSaver.fromConnString(process.env.DATABASE_URL);
+await checkpointer.setup(); // idempotent, safe to leave in
 
-// kaushik's key
 const model = new ChatGoogleGenerativeAI({
     model: "gemini-3.1-flash-lite",
     apiKey

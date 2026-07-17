@@ -47,7 +47,7 @@ export default function FoodTrackerList() {
       try {
         setIsLoading(true);
         setError("");
-        const res = await fetch(`/api/food-tracker?userId=${userId}`, {
+        const res = await fetch(`/api/food-tracker`, {
           signal: controller.signal,
         });
 

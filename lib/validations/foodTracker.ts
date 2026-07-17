@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const foodRecordSchema = z.object({
-    "userId": z.string().trim().min(3).max(30),
+    // "userId": z.string().trim().min(3).max(30),
     "nutritionId": z.string().trim().min(3).max(30),
     "quantity": z.number().min(1),
     "mealTime": z.enum(['breakfast', 'morningSnack', 'lunch', 'eveningSnack', 'dinner'])
@@ -23,8 +23,6 @@ const dateAtTime = (
     }, z.date().optional());
 
 export const FoodLogsQuerySchema = z.object({
-    userId: z.string().trim().min(3).max(30),
-
     from: dateAtTime(0, 0, 0, 0),
 
     to: dateAtTime(23, 59, 59, 999),

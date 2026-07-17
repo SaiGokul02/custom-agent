@@ -1,57 +1,86 @@
-.main {
-    padding-top: 30px;
-    width: 65%;
+.chatbot {
+    display: flex;
+    width: 100%;
     height: calc(100vh - 80px);
-    box-sizing: border-box;
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
+    background-color: #fcfcfc;
 }
 
-.main .title {
+.chatbot .sideBar {
+    width: 25%;
+    /* height: 100%; */
+    overflow-y: scroll;
+    padding: 1em;
+    padding-bottom: 0;
+    border-right: 1px solid grey;
+}
+
+.chatbot .sideBar .newChatBtn {
+    background-color: rgb(200, 196, 196);
+    font-size: 20px;
+    font-weight: 400;
+    color: black;
+    border: none;
+    border-radius: 50%;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+}
+
+.chatbot .sideBar .openChatWindow {
+    cursor: pointer;
+    margin: 8px 0;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.chatbot .sideBar .openChatWindow:hover {
+    background-color: rgba(236, 236, 236, 0.8);
+}
+
+.chatbot .sideBar .activeThread {
+    cursor: pointer;
+    margin: 8px 0;
+    background-color: rgba(236, 236, 236, 0.8);
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.chatbot .main {
+    width: 75%;
+    height: 100%;
+    box-sizing: border-box;
+    position: relative;
+    padding: 30px 20px 0 20px;
+}
+
+.chatbot .main .title {
     position: absolute;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
 }
 
-/* .main .chatResponse {
-    height: 100%;
-    overflow-y: scroll;
-    margin-bottom: 16px;
-}
-
-.main .chatResponse .user {
-    position: absolute;
-    right: 0;
-}
-
-.main .chatResponse .ai {
-    position: absolute;
-    left: 0;
-} */
-
-.main .chatResponse {
+.chatbot .main .chatResponse {
     height: 100%;
     overflow-y: auto;
-    margin-bottom: 16px;
+    margin-bottom: 0;
 
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.main .chatResponse .user {
+.chatbot .main .chatResponse .user {
     align-self: flex-end;
     max-width: 70%;
     padding: 12px 16px;
     border-radius: 16px;
-    background: black;
-    color: #fff;
+    background: #e9ecef;
+    color: black;
     word-break: break-word;
+    margin-bottom: 20px;
 }
 
-.main .chatResponse .ai {
+.chatbot .main .chatResponse .ai {
     align-self: flex-start;
     max-width: 70%;
     padding: 12px 16px;
@@ -59,9 +88,10 @@
     background: #e9ecef;
     color: #000;
     word-break: break-word;
+    margin-bottom: 20px;
 }
 
-.main .chatArea {
+.chatbot .main .chatArea {
     width: 50%;
     position: absolute;
     bottom: 30px;
@@ -69,7 +99,7 @@
     transform: translateX(-50%);
 }
 
-.main .chatArea .userInput {
+.chatbot .main .chatArea .userInput {
     background-color: #fff;
     width: 100%;
     padding: 16px 60px 16px 16px;
@@ -79,12 +109,14 @@
 }
 
 /* Style applied when the user clicks or tabs into the input */
-.main .chatArea .userInput:focus {
-  border-color: none; /* Changes border to blue */
-  outline: none;         /* Removes the default browser ring */
+.chatbot .main .chatArea .userInput:focus {
+    border-color: none;
+    /* Changes border to blue */
+    outline: none;
+    /* Removes the default browser ring */
 }
 
-.main .chatArea .submitInput {
+.chatbot .main .chatArea .submitInput {
     position: absolute;
     top: 50%;
     right: 12px;
