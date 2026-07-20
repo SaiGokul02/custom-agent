@@ -4,8 +4,10 @@ import type { RunnableConfig } from "@langchain/core/runnables";
 import { getNutritionSummaryForUser } from "@/features/food-tracker/food-tracker.service";
 
 export const getNutritionSummary = tool(
-    async ({ from, to, mealTime }, config: RunnableConfig) => {
-        const userId = config.configurable?.userId as string;
+    async ({ from, to, mealTime }, config) => {
+        // const userId = config.configurable?.userId as string;
+        const userId = config.context.userId;
+        console.log("user id from context: ", userId);
 
         if (!userId) {
             return { success: false, message: "Missing userId in tool config" };
