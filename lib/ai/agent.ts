@@ -15,6 +15,7 @@ import { addToFoodTracker } from "./tools/addToFoodTracker";
 
 import { systemPrompt } from "./prompts/systemPrompt";
 import { getNutritionSummary } from "./tools/getNutritionSummary";
+import { getFoodTrackerEntries } from "./tools/getFoodTrackerEntries";
 
 const apiKey = process.env.GOOGLE_API_KEY;
 
@@ -37,7 +38,6 @@ const handleToolErrors = createMiddleware({
   name: "HandleToolErrors",
   wrapToolCall: async (request, handler) => {
     try {
-      console.log("handling error");
       return await handler(request);
     } catch (error) {
       return new ToolMessage({
@@ -51,22 +51,25 @@ const handleToolErrors = createMiddleware({
 const trimMessageHistory = createMiddleware({
   name: "TrimMessages",
   beforeModel: async (state) => {
-    console.log(state.messages);
+    // console.log(state.messages);
   },
+});
+
+const summarization = summarizationMiddleware({
+  model,
+  trigger: { tokens: 1000 },
+  keep: { messages: 5 },
 });
 
 const agent = createAgent({
   model,
-  tools: [searchFoods, addToFoodTracker, getNutritionSummary],
-  middleware: [
-    handleToolErrors,
-    trimMessageHistory,
-    summarizationMiddleware({
-      model,
-      trigger: { tokens: 1000 },
-      keep: { messages: 5 },
-    }),
+  tools: [
+    searchFoods,
+    addToFoodTracker,
+    getNutritionSummary,
+    getFoodTrackerEntries,
   ],
+  middleware: [handleToolErrors, trimMessageHistory, summarization],
   systemPrompt,
   checkpointer,
   contextSchema,

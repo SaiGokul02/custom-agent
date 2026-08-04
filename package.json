@@ -14,6 +14,7 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "bcryptjs": "^3.0.3",
+    "date-fns": "^4.4.0",
     "jose": "^6.2.3",
     "js-cookie": "^3.0.8",
     "langchain": "^1.5.2",

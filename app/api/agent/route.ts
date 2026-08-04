@@ -28,8 +28,6 @@ export async function GET(req: Request) {
     },
   });
 
-  console.log("chat historyyyy ", chatHistory);
-
   // New thread with no messages yet, or thread doesn't belong to this user —
   // return empty history instead of crashing or leaking existence of the thread
   if (!chatHistory) {
@@ -82,6 +80,7 @@ export async function POST(req: Request) {
     async start(controller) {
       try {
         const agentStream = await agent.stream(
+          // @ts-ignore
           {
             messages: [{ role: "user", content: message }],
           },

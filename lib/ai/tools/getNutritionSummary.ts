@@ -1,35 +1,33 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import type { RunnableConfig } from "@langchain/core/runnables";
 import { getNutritionSummaryForUser } from "@/features/food-tracker/food-tracker.service";
 
 export const getNutritionSummary = tool(
-    async ({ from, to, mealTime }, config) => {
-        // const userId = config.configurable?.userId as string;
-        const userId = config.context.userId;
-        console.log("user id from context: ", userId);
+  async ({ from, to, mealTime }, config) => {
+    const userId = config.context.userId;
+    console.log("user id from context: ", userId);
 
-        if (!userId) {
-            return { success: false, message: "Missing userId in tool config" };
-        }
+    if (!userId) {
+      return { success: false, message: "Missing userId in tool config" };
+    }
 
-        try {
-            const summary = await getNutritionSummaryForUser({
-                userId,
-                from: from ? new Date(from) : undefined,
-                to: to ? new Date(to) : undefined,
-                mealTime,
-            });
+    try {
+      const summary = await getNutritionSummaryForUser({
+        userId,
+        from: from ? new Date(from) : undefined,
+        to: to ? new Date(to) : undefined,
+        mealTime,
+      });
 
-            return { success: true, summary };
-        } catch (error) {
-            console.error(error);
-            return { success: false, message: "Failed to fetch nutrition summary." };
-        }
-    },
-    {
-        name: "get_nutrition_summary",
-        description: `
+      return { success: true, summary };
+    } catch (error) {
+      console.error(error);
+      return { success: false, message: "Failed to fetch nutrition summary." };
+    }
+  },
+  {
+    name: "get_nutrition_summary",
+    description: `
 Gets the user's nutrition summary.
 
 Rules:
@@ -37,17 +35,17 @@ Rules:
 2. If from and to are provided, return the summary for that date range.
 3. If mealTime is provided, return the summary only for that meal.
 4. All parameters are optional.
+5. Never give nutrition summary from the context you have, always use this data.
 `,
-        schema: z.object({
-            from: z.string().optional().describe("Start date in YYYY-MM-DD format"),
-            to: z.string().optional().describe("End date in YYYY-MM-DD format"),
-            mealTime: z
-                .enum(["breakfast", "morningSnack", "lunch", "eveningSnack", "dinner"])
-                .optional(),
-        }),
-    }
+    schema: z.object({
+      from: z.string().optional().describe("Start date in YYYY-MM-DD format"),
+      to: z.string().optional().describe("End date in YYYY-MM-DD format"),
+      mealTime: z
+        .enum(["breakfast", "morningSnack", "lunch", "eveningSnack", "dinner"])
+        .optional(),
+    }),
+  },
 );
-
 
 // import { tool } from "@langchain/core/tools";
 // import { z } from "zod";

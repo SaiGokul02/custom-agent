@@ -5,6 +5,7 @@ import { createFoodLogEntry } from "@/features/food-tracker/food-tracker.service
 
 export const addToFoodTracker = tool(
   async ({ foods, mealTime }, config) => {
+    console.log(foods, mealTime);
     // const userId = config.configurable?.userId as string;
     const userId = config.context.userId;
 
