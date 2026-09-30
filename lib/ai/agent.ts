@@ -1,6 +1,7 @@
 import {
   createAgent,
   createMiddleware,
+  humanInTheLoopMiddleware,
   summarizationMiddleware,
   ToolMessage,
 } from "langchain";
@@ -16,6 +17,7 @@ import { addToFoodTracker } from "./tools/addToFoodTracker";
 import { systemPrompt } from "./prompts/systemPrompt";
 import { getNutritionSummary } from "./tools/getNutritionSummary";
 import { getFoodTrackerEntries } from "./tools/getFoodTrackerEntries";
+import { addToTrakcerPrompt } from "./prompts/addToTrackerPrompt";
 
 const apiKey = process.env.GOOGLE_API_KEY;
 
@@ -69,17 +71,32 @@ const agent = createAgent({
     getNutritionSummary,
     getFoodTrackerEntries,
   ],
-  middleware: [handleToolErrors, trimMessageHistory, summarization],
-  systemPrompt,
+  middleware: [
+    handleToolErrors,
+    trimMessageHistory,
+    summarization,
+    humanInTheLoopMiddleware({
+      interruptOn: {
+        searchFoods: false,
+        add_to_food_tracker: {
+          allowedDecisions: ["approve", "reject", "edit"],
+          description: "Adding food to nutrition tracker requires approval",
+        },
+        getNutritionSummary: true,
+        getFoodTrackerEntries: true,
+      },
+    }),
+  ],
+  systemPrompt: addToTrakcerPrompt,
   checkpointer,
   contextSchema,
 });
 
-// we can create another agents as well and invoke them
-const otherAgent = createAgent({
-  model,
-  tools: [],
-});
+// // we can create another agents as well and invoke them
+// const otherAgent = createAgent({
+//   model,
+//   tools: [],
+// });
 
 // models can be directly used without an agent in loop to complete small tasks that doesnt involve tools.
-export { agent, otherAgent, model };
+export { agent, model };

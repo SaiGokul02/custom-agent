@@ -3,14 +3,18 @@ import * as z from "zod";
 
 const searchFoods = tool(
   async ({ foodItems }) => {
+    console.log("searching for foods ", foodItems);
     const matchedFoods = Object.fromEntries(
       await Promise.all(
         foodItems.map(async (item) => {
+          console.log("item ", item);
           const res = await fetch(
-            `/api/nutrition/search-food?name=${encodeURIComponent(item)}`,
+            `http://localhost:3000/api/nutrition/search-food?name=${item}`,
           );
 
           const data = await res.json();
+
+          console.log("data ", data);
 
           // Only return the matched foods array
           return [item, data.matchedFoods];

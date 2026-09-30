@@ -1,8 +1,41 @@
 "use client";
+
 import styles from "./page.module.css";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import type { ActionRequest, ReviewConfig } from "langchain";
+import { ApprovalCard } from "../components/ApprovalCard/ApprovalCard";
+
+type ChatMessage = {
+  role: "human" | "ai";
+  content: string;
+};
+
+type PendingApproval = {
+  interruptId: string;
+  actionRequest: ActionRequest;
+  reviewConfig?: ReviewConfig;
+};
+
+type StreamEvent =
+  | {
+      type: "token";
+      content: string;
+    }
+  | {
+      type: "interrupt";
+      interruptId: string;
+      actionRequest: ActionRequest;
+      reviewConfig?: ReviewConfig;
+    }
+  | {
+      type: "done";
+    }
+  | {
+      type: "error";
+      error: string;
+    };
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -17,40 +50,49 @@ function HomeContent() {
   // Text currently typed in the input box
   const [messageInput, setMessageInput] = useState("");
 
-  // Full message history for the active thread (loaded from the DB)
-  const [messages, setMessages] = useState([]);
+  // Full message history for the active thread
+  // loaded from the DB
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   // Sidebar list of all conversations
-  const [conversations, setConversations] = useState([]);
+  const [conversations, setConversations] = useState<any[]>([]);
 
-  // True while a message is being sent and a reply is streaming in
+  // True while a message is being sent or an approval
+  // decision is being processed
   const [isSending, setIsSending] = useState(false);
 
-  // Holds the AI reply text as it streams in, before it's saved to `messages`
+  // Holds the AI reply text as it streams in
+  // before it is saved to `messages`
   const [streamingReply, setStreamingReply] = useState("");
 
-  // Optimistic copy of the user's own message — shown instantly on send,
-  // before the server confirms it. Cleared once `messages` is refreshed
-  // with the real, saved version.
-  const [pendingUserMessage, setPendingUserMessage] = useState(null);
+  // Optimistic copy of the user's own message
+  const [pendingUserMessage, setPendingUserMessage] =
+    useState<ChatMessage | null>(null);
 
-  const chatContainerRef = useRef(null);
+  // Holds the currently pending human approval
+  const [pendingApproval, setPendingApproval] =
+    useState<PendingApproval | null>(null);
 
-  // When the user sends a new message, always jump to the bottom so they
-  // see their own message and the reply starting to stream in.
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-scroll when a new user message is sent
   useEffect(() => {
     if (pendingUserMessage) {
       const container = chatContainerRef.current;
-      if (container) container.scrollTop = container.scrollHeight;
+
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
     }
   }, [pendingUserMessage]);
 
-  // While the reply streams in (or history refreshes), only auto-scroll if
-  // the user is already near the bottom — so scrolling up to reread earlier
-  // messages isn't yanked back down.
+  // Auto-scroll while streaming
   useEffect(() => {
     const container = chatContainerRef.current;
-    if (!container) return;
+
+    if (!container) {
+      return;
+    }
 
     const isNearBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight <
@@ -59,43 +101,52 @@ function HomeContent() {
     if (isNearBottom) {
       container.scrollTop = container.scrollHeight;
     }
-  }, [messages, streamingReply]);
+  }, [messages, streamingReply, pendingApproval]);
 
-  // Redirect unauthenticated users before any data fetch happens
+  // Redirect unauthenticated users
   useEffect(() => {
     if (!isAuthLoading && !user) {
       router.push("/login");
     }
   }, [isAuthLoading, user, router]);
 
-  const handleMessageInputChange = (e) => {
+  // Input change
+  const handleMessageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessageInput(e.target.value);
   };
 
-  // Updates the URL's `thread_id` query param to reflect the active thread
-  const navigateToThread = (id) => {
+  // Update URL with active thread
+  const navigateToThread = (id: string) => {
     const params = new URLSearchParams(searchParams.toString());
+
     params.set("thread_id", id);
+
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  const handleSelectConversation = (id) => {
+  // Select existing conversation
+  const handleSelectConversation = (id: string) => {
     setThreadId(id);
     navigateToThread(id);
   };
 
+  // Create a new conversation
   const handleNewChat = () => {
     const newThreadId = crypto.randomUUID();
+
     setThreadId(newThreadId);
     setMessages([]);
     setStreamingReply("");
     setPendingUserMessage(null);
+    setPendingApproval(null);
+
     navigateToThread(newThreadId);
+
     return newThreadId;
   };
 
-  // Fetches the saved message history for a thread and syncs local state to it
-  const loadConversationHistory = async (id) => {
+  // Load conversation history
+  const loadConversationHistory = async (id: string) => {
     try {
       const res = await fetch(`/api/agent?thread_id=${id}`);
 
@@ -106,34 +157,179 @@ function HomeContent() {
 
       if (!res.ok) {
         console.error("Failed to load conversation history:", res.status);
+
         setMessages([]);
+
         return;
       }
 
       const data = await res.json();
-      setMessages(data); // always the full, real history — no popping/trimming
-      setStreamingReply(""); // clear scratch buffer now that messages has caught up
-      setPendingUserMessage(null); // clear optimistic bubble now that messages has caught up
+
+      setMessages(data);
+
+      setStreamingReply("");
+      setPendingUserMessage(null);
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Sends a message to the agent and streams the reply back in
-  async function sendMessage(activeThreadId) {
-    if (!activeThreadId || !messageInput) return;
+  // Process one NDJSON stream event
+  const handleStreamEvent = (
+    event: StreamEvent,
+    accumulatedReply: {
+      value: string;
+    },
+  ) => {
+    switch (event.type) {
+      // AI token
+      case "token": {
+        accumulatedReply.value += event.content;
+
+        setStreamingReply(accumulatedReply.value);
+
+        break;
+      }
+
+      // Agent interrupted and needs human approval
+      case "interrupt": {
+        console.log("Agent interrupt:", event);
+
+        setPendingApproval({
+          interruptId: event.interruptId,
+          actionRequest: event.actionRequest,
+          reviewConfig: event.reviewConfig,
+        });
+
+        break;
+      }
+
+      // Agent execution completed
+      case "done": {
+        break;
+      }
+
+      // Agent error
+
+      case "error": {
+        console.error("Agent stream error:", event.error);
+        break;
+      }
+
+      default: {
+        break;
+      }
+    }
+  };
+
+  // Read the agent NDJSON stream
+
+  const readAgentStream = async (
+    response: Response,
+    accumulatedReply: {
+      value: string;
+    },
+  ) => {
+    if (!response.body) {
+      throw new Error("Response body is empty");
+    }
+
+    const reader = response.body.getReader();
+
+    const decoder = new TextDecoder();
+
+    /*
+     * A ReadableStream chunk does NOT necessarily represent
+     * one complete JSON event.
+     *
+     * For example, one chunk could contain:
+     *
+     * {"type":"token","content":"Hel
+     *
+     * and the next:
+     *
+     * lo"}\n
+     *
+     * Therefore we maintain a buffer and only parse complete
+     * newline-delimited JSON records.
+     */
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, {
+        stream: true,
+      });
+
+      const lines = buffer.split("\n");
+
+      // Keep the final incomplete line in the buffer.
+
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.trim()) {
+          continue;
+        }
+
+        try {
+          const event = JSON.parse(line) as StreamEvent;
+
+          handleStreamEvent(event, accumulatedReply);
+        } catch (err) {
+          console.error("Failed to parse stream event:", line, err);
+        }
+      }
+    }
+
+    // Process any remaining buffered data.
+    if (buffer.trim()) {
+      try {
+        const event = JSON.parse(buffer) as StreamEvent;
+
+        handleStreamEvent(event, accumulatedReply);
+      } catch (err) {
+        console.error("Failed to parse final stream event:", buffer, err);
+      }
+    }
+  };
+
+  // Send a new user message
+  async function sendMessage(activeThreadId: string) {
+    const message = messageInput.trim();
+
+    if (!activeThreadId || !message) {
+      return;
+    }
 
     setIsSending(true);
     setStreamingReply("");
-    setPendingUserMessage({ role: "human", content: messageInput }); // show immediately, before the request even goes out
-    setMessageInput(""); // clear input right away too, now that the message is safely in pendingUserMessage
+
+    setPendingUserMessage({
+      role: "human",
+      content: message,
+    });
+
+    setMessageInput("");
+
+    // This object is shared with readAgentStream so that every token updates the same accumulated response.
+    const accumulatedReply = {
+      value: "",
+    };
 
     try {
       const res = await fetch("/api/agent", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          message: messageInput,
+          message,
           threadId: activeThreadId,
         }),
       });
@@ -143,26 +339,40 @@ function HomeContent() {
         return;
       }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulatedReply = "";
+      if (!res.ok) {
+        const errorText = await res.text();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        accumulatedReply += decoder.decode(value, { stream: true });
-        setStreamingReply(accumulatedReply);
+        throw new Error(errorText || "Failed to send message");
       }
 
-      await loadConversationHistory(activeThreadId); // refreshes `messages`, then clears streamingReply + pendingUserMessage
+      /*
+       * Read the token / interrupt / done
+       * events from the backend.
+       */
+      await readAgentStream(res, accumulatedReply);
+
+      /*
+       * If the agent interrupted, DO NOT clear
+       * pendingApproval here.
+       *
+       * The ApprovalCard needs to remain visible.
+       */
+      if (!pendingApproval) {
+        await loadConversationHistory(activeThreadId);
+      }
+
       await fetchConversations();
 
-      // Refresh sidebar once more after the background title-generation finishes
+      /*
+       * Refresh sidebar once more after
+       * background title generation, if enabled.
+       */
       setTimeout(() => {
         fetchConversations();
       }, 1500);
     } catch (err) {
       console.error(err);
+
       setStreamingReply("");
       setPendingUserMessage(null);
     } finally {
@@ -170,12 +380,94 @@ function HomeContent() {
     }
   }
 
+  // Handle Approve / Reject
+  const handleApproval = async (
+    decision: "approve" | "reject" | "edit",
+    reason?: string,
+    actionRequest?,
+  ) => {
+    if (!threadId || !pendingApproval) {
+      return;
+    }
+
+    setIsSending(true);
+    setStreamingReply("");
+
+    /*
+     * Keep the current approval visible while
+     * the decision is being processed.
+     */
+    const accumulatedReply = {
+      value: "",
+    };
+
+    try {
+      const res = await fetch("/api/agent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          threadId,
+          decision,
+          reason,
+          actionRequest,
+        }),
+      });
+
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (!res.ok) {
+        const errorText = await res.text();
+
+        throw new Error(errorText || "Failed to resume agent");
+      }
+
+      /*
+       * We received the resumed agent stream.
+       */
+      await readAgentStream(res, accumulatedReply);
+
+      /*
+       * Remove the old approval card after
+       * the decision has been successfully
+       * processed.
+       *
+       * If another interrupt happened during
+       * the resumed execution, the stream
+       * handler will set a new pending approval.
+       */
+      setPendingApproval(null);
+
+      /*
+       * Reload the persisted conversation.
+       *
+       * This is important because the resumed
+       * AI response has now been saved by the API.
+       */
+      await loadConversationHistory(threadId);
+
+      await fetchConversations();
+    } catch (err) {
+      console.error("Approval error:", err);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Handle Send button
+
   const handleSendClick = () => {
     const activeThreadId = threadId || handleNewChat();
+
     sendMessage(activeThreadId);
   };
 
-  // Fetches the sidebar list of all conversations
+  // Fetch sidebar conversations
+
   async function fetchConversations() {
     try {
       const res = await fetch("/api/conversations");
@@ -187,45 +479,57 @@ function HomeContent() {
 
       if (!res.ok) {
         console.error("Failed to load conversations:", res.status);
+
         return;
       }
 
       const data = await res.json();
+
       setConversations(data);
     } catch (err) {
       console.error(err);
     }
   }
 
-  // Load history whenever the active thread changes
+  // Load history whenever active thread changes
+
   useEffect(() => {
-    if (!threadId || !user) return;
+    if (!threadId || !user) {
+      return;
+    }
 
     setIsSending(true);
-    setStreamingReply(""); // clear any leftover streaming state from a previous thread
-    setPendingUserMessage(null); // clear any leftover optimistic bubble from a previous thread
+    setStreamingReply("");
+    setPendingUserMessage(null);
+    setPendingApproval(null);
 
     loadConversationHistory(threadId).finally(() => setIsSending(false));
   }, [threadId, user]);
 
-  // Only fetch the sidebar once we know the user is authenticated
+  // Fetch sidebar once authenticated
+
   useEffect(() => {
     if (user) {
       fetchConversations();
     }
   }, [user]);
 
-  // While auth is resolving, or once we know we're redirecting, don't render the chat UI
+  // Loading state
+
   if (isAuthLoading || !user) {
     return <p>Loading...</p>;
   }
 
+  // Render
+
   return (
     <div className={styles.chatbot}>
+      {/* Sidebar */}
       <div className={styles.sideBar}>
         <button className={styles.newChatBtn} onClick={handleNewChat}>
           +
         </button>
+
         {conversations.map((conversation) => (
           <div
             key={conversation.threadId}
@@ -240,9 +544,11 @@ function HomeContent() {
           </div>
         ))}
       </div>
-
+      {/* Main chat                                               */}
       <main className={styles.main}>
         <div className={styles.chatResponse} ref={chatContainerRef}>
+          {/* Saved messages                                     */}
+
           {messages.map((msg, index) => (
             <div
               key={index}
@@ -252,18 +558,41 @@ function HomeContent() {
             </div>
           ))}
 
+          {/* Optimistic user message                            */}
+
           {pendingUserMessage && (
             <div key="pending" className={styles.user}>
               {pendingUserMessage.content}
             </div>
           )}
 
+          {/* Streaming AI response                              */}
+
           {streamingReply && (
             <div key="streaming" className={styles.ai}>
               {streamingReply}
             </div>
           )}
+
+          {/* Human approval                                     */}
+
+          {pendingApproval && (
+            <ApprovalCard
+              actionRequest={pendingApproval.actionRequest}
+              reviewConfig={pendingApproval.reviewConfig}
+              onApprove={() => "approve"}
+              onReject={(reason) => handleApproval("reject", reason)}
+              onEdit={(actionRequest) =>
+                handleApproval("edit", "", actionRequest)
+              }
+              isProcessing={isSending}
+            />
+          )}
         </div>
+
+        {/* ---------------------------------------------------- */}
+        {/* Chat input                                            */}
+        {/* ---------------------------------------------------- */}
 
         <div className={styles.chatArea}>
           <input
@@ -272,12 +601,24 @@ function HomeContent() {
             onChange={handleMessageInputChange}
             value={messageInput}
             placeholder="Ask something"
+            disabled={isSending || !!pendingApproval}
+            onKeyDown={(e) => {
+              if (
+                e.key === "Enter" &&
+                !e.shiftKey &&
+                !isSending &&
+                !pendingApproval
+              ) {
+                e.preventDefault();
+                handleSendClick();
+              }
+            }}
           />
 
           <button
             className={styles.submitInput}
             onClick={handleSendClick}
-            disabled={isSending}
+            disabled={isSending || !!pendingApproval}
           >
             &#8593;
           </button>
@@ -303,54 +644,73 @@ export default function Home() {
 
 // function HomeContent() {
 //   const searchParams = useSearchParams();
-//   const thread_id = searchParams.get("thread_id");
+//   const threadIdFromUrl = searchParams.get("thread_id");
 //   const pathname = usePathname();
 //   const router = useRouter();
-//   const { user, isLoading: authLoading } = useAuth();
+//   const { user, isLoading: isAuthLoading } = useAuth();
 
-//   const [threadId, setThreadId] = useState(thread_id || "");
-//   const [message, setMessage] = useState("");
-//   const [response, setResponse] = useState([]);
+//   // Currently active conversation thread
+//   const [threadId, setThreadId] = useState(threadIdFromUrl || "");
+
+//   // Text currently typed in the input box
+//   const [messageInput, setMessageInput] = useState("");
+
+//   // Full message history for the active thread (loaded from the DB)
+//   const [messages, setMessages] = useState([]);
+
+//   // Sidebar list of all conversations
 //   const [conversations, setConversations] = useState([]);
-//   const [loading, setLoading] = useState(false);
 
-//   const [chatLatestReply, setChatLatestReply] = useState("");
-//   // Optimistic copy of the user's own message, shown instantly on send.
-//   // Cleared the moment `response` is refreshed with real data that includes it.
-//   const [pendingMessage, setPendingMessage] = useState(null);
+//   // True while a message is being sent and a reply is streaming in
+//   const [isSending, setIsSending] = useState(false);
 
-//   const chatResponseRef = useRef(null);
+//   // Holds the AI reply text as it streams in, before it's saved to `messages`
+//   const [streamingReply, setStreamingReply] = useState("");
 
-//   // when the user sends a new message, always jump to bottom so they see their own message + the reply starting
+//   // Optimistic copy of the user's own message — shown instantly on send,
+//   // before the server confirms it. Cleared once `messages` is refreshed
+//   // with the real, saved version.
+//   const [pendingUserMessage, setPendingUserMessage] = useState(null);
+
+//   const chatContainerRef = useRef(null);
+
+//   // When the user sends a new message, always jump to the bottom so they
+//   // see their own message and the reply starting to stream in.
 //   useEffect(() => {
-//     if (pendingMessage) {
-//       const el = chatResponseRef.current;
-//       if (el) el.scrollTop = el.scrollHeight;
+//     if (pendingUserMessage) {
+//       const container = chatContainerRef.current;
+//       if (container) container.scrollTop = container.scrollHeight;
 //     }
-//   }, [pendingMessage]);
+//   }, [pendingUserMessage]);
 
-//   // while the reply streams in (or history refreshes), only follow it if the user is already
-//   // near the bottom — so scrolling up to reread earlier messages isn't yanked back down
+//   // While the reply streams in (or history refreshes), only auto-scroll if
+//   // the user is already near the bottom — so scrolling up to reread earlier
+//   // messages isn't yanked back down.
 //   useEffect(() => {
-//     const el = chatResponseRef.current;
-//     if (!el) return;
-//     const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+//     const container = chatContainerRef.current;
+//     if (!container) return;
+
+//     const isNearBottom =
+//       container.scrollHeight - container.scrollTop - container.clientHeight <
+//       150;
+
 //     if (isNearBottom) {
-//       el.scrollTop = el.scrollHeight;
+//       container.scrollTop = container.scrollHeight;
 //     }
-//   }, [response, chatLatestReply]);
+//   }, [messages, streamingReply]);
 
-//   // Gate: redirect unauthenticated users before any data fetch happens
+//   // Redirect unauthenticated users before any data fetch happens
 //   useEffect(() => {
-//     if (!authLoading && !user) {
+//     if (!isAuthLoading && !user) {
 //       router.push("/login");
 //     }
-//   }, [authLoading, user, router]);
+//   }, [isAuthLoading, user, router]);
 
-//   const handleMessage = (e) => {
-//     setMessage(e.target.value);
+//   const handleMessageInputChange = (e) => {
+//     setMessageInput(e.target.value);
 //   };
 
+//   // Updates the URL's `thread_id` query param to reflect the active thread
 //   const navigateToThread = (id) => {
 //     const params = new URLSearchParams(searchParams.toString());
 //     params.set("thread_id", id);
@@ -363,27 +723,57 @@ export default function Home() {
 //   };
 
 //   const handleNewChat = () => {
-//     const random = crypto.randomUUID();
-//     setThreadId(random);
-//     setResponse([]);
-//     setChatLatestReply("");
-//     setPendingMessage(null);
-//     navigateToThread(random);
-//     return random;
+//     const newThreadId = crypto.randomUUID();
+//     setThreadId(newThreadId);
+//     setMessages([]);
+//     setStreamingReply("");
+//     setPendingUserMessage(null);
+//     navigateToThread(newThreadId);
+//     return newThreadId;
 //   };
 
-//   async function callAgent(activeThreadId) {
-//     if (!activeThreadId || !message) return;
-//     setLoading(true);
-//     setChatLatestReply("");
-//     setPendingMessage({ role: "human", content: message }); // show immediately, before the request even goes out
-//     setMessage(""); // clear input right away too, now that the message is safely in pendingMessage
+//   // Fetches the saved message history for a thread and syncs local state to it
+//   const loadConversationHistory = async (id) => {
+//     try {
+//       const res = await fetch(`/api/agent?thread_id=${id}`);
+
+//       if (res.status === 401) {
+//         router.push("/login");
+//         return;
+//       }
+
+//       if (!res.ok) {
+//         console.error("Failed to load conversation history:", res.status);
+//         setMessages([]);
+//         return;
+//       }
+
+//       const data = await res.json();
+//       setMessages(data); // always the full, real history — no popping/trimming
+//       setStreamingReply(""); // clear scratch buffer now that messages has caught up
+//       setPendingUserMessage(null); // clear optimistic bubble now that messages has caught up
+//     } catch (err) {
+//       console.error(err);
+//     }
+//   };
+
+//   // Sends a message to the agent and streams the reply back in
+//   async function sendMessage(activeThreadId) {
+//     if (!activeThreadId || !messageInput) return;
+
+//     setIsSending(true);
+//     setStreamingReply("");
+//     setPendingUserMessage({ role: "human", content: messageInput }); // show immediately, before the request even goes out
+//     setMessageInput(""); // clear input right away too, now that the message is safely in pendingUserMessage
 
 //     try {
 //       const res = await fetch("/api/agent", {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({ message, threadId: activeThreadId }),
+//         body: JSON.stringify({
+//           message: messageInput,
+//           threadId: activeThreadId,
+//         }),
 //       });
 
 //       if (res.status === 401) {
@@ -393,33 +783,37 @@ export default function Home() {
 
 //       const reader = res.body.getReader();
 //       const decoder = new TextDecoder();
-//       let accumulated = "";
+//       let accumulatedReply = "";
 
 //       while (true) {
 //         const { done, value } = await reader.read();
 //         if (done) break;
-//         accumulated += decoder.decode(value, { stream: true });
-//         setChatLatestReply(accumulated);
+//         accumulatedReply += decoder.decode(value, { stream: true });
+//         setStreamingReply(accumulatedReply);
 //       }
-//       await getConversationHistory(activeThreadId); // refreshes `response`, then clears chatLatestReply + pendingMessage
 
+//       await loadConversationHistory(activeThreadId); // refreshes `messages`, then clears streamingReply + pendingUserMessage
 //       await fetchConversations();
-//       // Refresh once more after the background title generation
+
+//       // Refresh sidebar once more after the background title-generation finishes
 //       setTimeout(() => {
 //         fetchConversations();
 //       }, 1500);
 //     } catch (err) {
 //       console.error(err);
+//       setStreamingReply("");
+//       setPendingUserMessage(null);
 //     } finally {
-//       setLoading(false);
+//       setIsSending(false);
 //     }
 //   }
 
-//   const handleUserQuery = () => {
+//   const handleSendClick = () => {
 //     const activeThreadId = threadId || handleNewChat();
-//     callAgent(activeThreadId);
+//     sendMessage(activeThreadId);
 //   };
 
+//   // Fetches the sidebar list of all conversations
 //   async function fetchConversations() {
 //     try {
 //       const res = await fetch("/api/conversations");
@@ -429,61 +823,27 @@ export default function Home() {
 //         return;
 //       }
 
-//       console.log("fetched conversations");
+//       if (!res.ok) {
+//         console.error("Failed to load conversations:", res.status);
+//         return;
+//       }
 
 //       const data = await res.json();
-//       console.log("data ", data);
-//       console.log("conversations ", conversations);
 //       setConversations(data);
 //     } catch (err) {
 //       console.error(err);
 //     }
 //   }
 
-//   const getConversationHistory = async (threadId) => {
-//     try {
-//       const res = await fetch(`/api/agent?thread_id=${threadId}`);
-
-//       if (res.status === 401) {
-//         router.push("/login");
-//         return;
-//       }
-
-//       const data = await res.json();
-//       // response is always the full, real history — no popping/trimming
-//       setResponse(data);
-//       setChatLatestReply(""); // clear scratch buffer now that response has caught up
-//       setPendingMessage(null); // clear optimistic bubble now that response has caught up
-//     } catch (err) {
-//       console.error(err);
-//     }
-//   };
-
+//   // Load history whenever the active thread changes
 //   useEffect(() => {
 //     if (!threadId || !user) return;
 
-//     const getConversationHistory = async () => {
-//       setLoading(true);
-//       setChatLatestReply(""); // clear any leftover streaming state from a previous thread
-//       setPendingMessage(null); // clear any leftover optimistic bubble from a previous thread
-//       try {
-//         const res = await fetch(`/api/agent?thread_id=${threadId}`);
+//     setIsSending(true);
+//     setStreamingReply(""); // clear any leftover streaming state from a previous thread
+//     setPendingUserMessage(null); // clear any leftover optimistic bubble from a previous thread
 
-//         if (res.status === 401) {
-//           router.push("/login");
-//           return;
-//         }
-
-//         const data = await res.json();
-//         setResponse(data);
-//       } catch (err) {
-//         console.error(err);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     getConversationHistory();
+//     loadConversationHistory(threadId).finally(() => setIsSending(false));
 //   }, [threadId, user]);
 
 //   // Only fetch the sidebar once we know the user is authenticated
@@ -494,7 +854,7 @@ export default function Home() {
 //   }, [user]);
 
 //   // While auth is resolving, or once we know we're redirecting, don't render the chat UI
-//   if (authLoading || !user) {
+//   if (isAuthLoading || !user) {
 //     return <p>Loading...</p>;
 //   }
 
@@ -504,38 +864,41 @@ export default function Home() {
 //         <button className={styles.newChatBtn} onClick={handleNewChat}>
 //           +
 //         </button>
-//         {conversations.map((c) => (
+//         {conversations.map((conversation) => (
 //           <div
-//             key={c.threadId}
-//             onClick={() => handleSelectConversation(c.threadId)}
+//             key={conversation.threadId}
+//             onClick={() => handleSelectConversation(conversation.threadId)}
 //             className={
-//               (c.threadId === threadId ? styles.activeThread : "") +
+//               (conversation.threadId === threadId ? styles.activeThread : "") +
 //               " " +
 //               styles.openChatWindow
 //             }
 //           >
-//             {c.title}
+//             {conversation.title}
 //           </div>
 //         ))}
 //       </div>
+
 //       <main className={styles.main}>
-//         <div className={styles.chatResponse} ref={chatResponseRef}>
-//           {response.map((res, index) => (
+//         <div className={styles.chatResponse} ref={chatContainerRef}>
+//           {messages.map((msg, index) => (
 //             <div
 //               key={index}
-//               className={res.role === "human" ? styles.user : styles.ai}
+//               className={msg.role === "human" ? styles.user : styles.ai}
 //             >
-//               {res.content}
+//               {msg.content}
 //             </div>
 //           ))}
-//           {pendingMessage && (
+
+//           {pendingUserMessage && (
 //             <div key="pending" className={styles.user}>
-//               {pendingMessage.content}
+//               {pendingUserMessage.content}
 //             </div>
 //           )}
-//           {chatLatestReply && (
-//             <div key="latest" className={styles.ai}>
-//               {chatLatestReply}
+
+//           {streamingReply && (
+//             <div key="streaming" className={styles.ai}>
+//               {streamingReply}
 //             </div>
 //           )}
 //         </div>
@@ -544,15 +907,15 @@ export default function Home() {
 //           <input
 //             className={styles.userInput}
 //             type="text"
-//             onChange={handleMessage}
-//             value={message}
+//             onChange={handleMessageInputChange}
+//             value={messageInput}
 //             placeholder="Ask something"
 //           />
 
 //           <button
 //             className={styles.submitInput}
-//             onClick={handleUserQuery}
-//             disabled={loading}
+//             onClick={handleSendClick}
+//             disabled={isSending}
 //           >
 //             &#8593;
 //           </button>

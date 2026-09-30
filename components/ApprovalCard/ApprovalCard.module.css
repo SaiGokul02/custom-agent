@@ -1,0 +1,356 @@
+/* /* 
+
+.card {
+  --ac-border: #e5e7eb;
+  --ac-surface: #ffffff;
+  --ac-surface-2: #f9fafb;
+  --ac-surface-3: #f3f4f6;
+  --ac-text: #111827;
+  --ac-text-2: #4b5563;
+  --ac-text-3: #6b7280;
+  --ac-primary: #4f46e5;
+  --ac-primary-dark: #4338ca;
+  --ac-warning: #d97706;
+  --ac-approve: #059669;
+  --ac-approve-hover: #047857;
+  --ac-danger: #dc2626;
+  --ac-danger-hover: #b91c1c;
+  --ac-danger-soft: #fef2f2;
+  --ac-ring: rgba(79, 70, 229, 0.3);
+
+  display: flex;
+  flex-direction: column;
+  max-height: min(80vh, 640px);
+  overflow: hidden;
+  border: 1px solid var(--ac-border);
+  border-radius: 12px;
+  background: var(--ac-surface);
+  color: var(--ac-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  .card {
+    --ac-border: #2e3440;
+    --ac-surface: #16181d;
+    --ac-surface-2: #1c1f26;
+    --ac-surface-3: #232730;
+    --ac-text: #f3f4f6;
+    --ac-text-2: #b6bcc8;
+    --ac-text-3: #8b93a3;
+    --ac-primary: #818cf8;
+    --ac-warning: #f59e0b;
+    --ac-danger: #f87171;
+    --ac-danger-soft: rgba(248, 113, 113, 0.1);
+    --ac-ring: rgba(129, 140, 248, 0.35);
+  }
+}
+
+
+.header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--ac-border);
+  background: var(--ac-surface-2);
+}
+
+.headerTitle {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--ac-text);
+}
+
+.badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--ac-warning);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.iconSm {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.iconWarning {
+  color: var(--ac-warning);
+}
+
+.iconPrimary {
+  color: var(--ac-primary);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.body > * {
+  flex-shrink: 0;
+}
+
+.action {
+  padding: 12px;
+  border: 1px solid var(--ac-border);
+  border-radius: 8px;
+  background: var(--ac-surface-3);
+}
+
+.actionName {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ac-text);
+}
+
+.actionDescription {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ac-text-3);
+}
+
+.args {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.argKey {
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ac-text-3);
+}
+
+.argValue {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ac-text);
+  overflow-wrap: anywhere;
+}
+
+.argValueMultiline {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--ac-border);
+  border-radius: 6px;
+  background: var(--ac-surface);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ac-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ac-text-2);
+}
+
+.labelHint {
+  font-weight: 400;
+  color: var(--ac-text-3);
+}
+
+.input,
+.textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid var(--ac-border);
+  border-radius: 8px;
+  background: var(--ac-surface);
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ac-text);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.input::placeholder {
+  color: var(--ac-text-3);
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--ac-primary);
+  box-shadow: 0 0 0 3px var(--ac-ring);
+}
+
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+.inputDanger:focus {
+  border-color: var(--ac-danger);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+}
+
+.rejectField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rejectField .label {
+  margin-bottom: 0;
+}
+
+.editCode {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--ac-surface-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.editFields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionsEdit {
+  padding-top: 4px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ac-primary);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btnApprove {
+  background: var(--ac-approve);
+  color: #ffffff;
+}
+
+.btnApprove:hover:not(:disabled) {
+  background: var(--ac-approve-hover);
+}
+
+.btnPrimary {
+  background: var(--ac-primary-dark);
+  color: #ffffff;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btnSecondary {
+  border-color: var(--ac-border);
+  background: var(--ac-surface);
+  color: var(--ac-text-2);
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: var(--ac-surface-2);
+}
+
+.btnReject {
+  border-color: var(--ac-border);
+  background: var(--ac-surface);
+  color: var(--ac-danger);
+}
+
+.btnReject:hover:not(:disabled) {
+  background: var(--ac-danger-soft);
+}
+
+.btnDanger {
+  background: var(--ac-danger);
+  color: #ffffff;
+}
+
+.btnDanger:hover:not(:disabled) {
+  background: var(--ac-danger-hover);
+}
+
+
+@media (max-width: 480px) {
+  .body {
+    padding: 12px;
+  }
+
+  .actions .btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .input,
+  .textarea {
+    transition: none;
+  }
+} */
